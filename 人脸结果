@@ -1,0 +1,22 @@
+Python 2.7.7 (default, Jun  1 2014, 14:21:57) [MSC v.1500 64 bit (AMD64)] on win32
+Type "copyright", "credits" or "license()" for more information.
+>>> ================================ RESTART ================================
+>>> 
+
+============================
+Faces dataset decompositions
+============================
+
+This example applies to :ref:`olivetti_faces` different unsupervised
+matrix decomposition (dimension reduction) methods from the module
+:py:mod:`sklearn.decomposition` (see the documentation chapter
+:ref:`decompositions`) .
+
+
+Dataset consists of 400 faces
+Extracting the top 6 Eigenfaces - RandomizedPCA...
+done in 0.133s
+>>> estimator.explained_variance_ratio_
+array([ 0.18154662,  0.10176537,  0.07104157,  0.05596356,  0.04068816,
+        0.03341956])
+>>> 
