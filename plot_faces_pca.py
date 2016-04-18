@@ -73,7 +73,7 @@ center = True
 ###############################################################################
 # Plot a sample of the input data
 
-plot_gallery("First centered Olivetti faces", faces_centered[:n_components])
+plot_gallery("First centered B faces", faces_centered[:n_components])
 
 ###############################################################################
 # Do the estimation and plot it

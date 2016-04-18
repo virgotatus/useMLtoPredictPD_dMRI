@@ -246,7 +246,7 @@ for c,cla in enumerate(classname):
 #指标pca
 print 'pca starting'
 #存储pca模型
-zhibiao_pca = decomposition.IncrementalPCA(n_components=2)
+zhibiao_pca = decomposition.IncrementalPCA(n_components=3)
 zhibiao_pca.fit(X_pca.reshape(classnum,-1).T)
 #joblib.dump(zhibiao, os.getcwd()+'/modelsave/zhibiao_pca_5000.pkl')
 #zhibiao_pca = joblib.load(os.getcwd()+'/modelsave/zhibiao_pca_5000.pkl')
@@ -263,10 +263,28 @@ Y_learning = np.ones(all_num,int)
 Y_learning[data_num:] =  2*np.ones(pat_num,int)
 Y_learning[Y_learning==1].shape
 
+X_learning = np.zeros([all_num,data_shape*3])           #(n_samples, n_features) 
+for i in range(all_num):
+    X_learning[i,:data_shape]=X_outpca[i*data_shape:(i+1)*data_shape,0]
+    X_learning[i,data_shape:data_shape*2]=X_outpca[i*data_shape:(i+1)*data_shape,1]
+    X_learning[i,data_shape*2:]=X_outpca[i*data_shape:(i+1)*data_shape,2]
+    
+plt.figure()
+plt.plot(X_learning[:16,:].mean(axis=0),'b-',X_learning[16:,:].mean(axis=0),'r:')
+plt.xlim(xmax=9000)
+plt.text(x=1500,y=0.7,s = "pca1",fontsize=17,color='y')
+plt.text(x=4000,y=0.7,s = "pca2",fontsize=17,color='y')
+plt.text(x=7000,y=0.7,s = "pca3",fontsize=17,color='y')
+plt.grid()
+plt.legend({'control','patient'},'best')
+plt.title('mean signal of three components after PCA of con and pat in gong_block')
+
+asda
+
 ##############################################################################
 #feature selection
 print 'feature selection'
-feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=500)  #中闹500
+feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=50)  #中闹500
 X_reduced = feature_selec.fit_transform(X_learning,Y_learning)
 where = feature_selec.get_support()
 #awhere = where.reshape(2,20,50,5)
@@ -281,40 +299,20 @@ where = feature_selec.get_support()
 #存储数据
 #np.save('/home/gongyilong/brain-pca/mat_save/mid_brain_Xlearning',X_learning)
 #np.save('/home/gongyilong/brain-pca/mat_save/mid_brain_Xreduced',X_reduced)
-########################reduced
 bayes_estimator = GaussianNB()
 bayes_estimator.fit(X_reduced,Y_learning)
 print 'random_tree'
-random_tree = RandomForestClassifier(n_estimators=1500)
+random_tree = RandomForestClassifier(n_estimators=500)
 random_tree = random_tree.fit(X_reduced,Y_learning)
 #coef = bayes_estimator.theta_
 #coef = feature_selec.inverse_transform(coef)
 #cv = cross_validation.ShuffleSplit(X.shape[0], n_iter=100,
                                        #test_size=0.2, random_state=0)
-ranfortitle = 'Random Forest(1500) model CV(10) in fitting gong_block PCA feature vector after feature selection(500)'
-plot_learning_curve(random_tree, ranfortitle ,X_reduced,Y_learning, cv=10)
+plot_learning_curve(random_tree, 'random_tree',X_reduced,Y_learning, cv=10)
 print 'bayes_estimator'
-bayestitle = 'Naive Bayes model CV(10) in fitting gong_block PCA feature vector after feature selection(500)'
-plot_learning_curve(bayes_estimator, bayestitle,X_reduced,Y_learning, cv=10)
+plot_learning_curve(bayes_estimator, 'Bayes',X_reduced,Y_learning, cv=10)
 
 
-########################learning
-"""
-bayes_estimator = GaussianNB()
-bayes_estimator.fit(X_learning,Y_learning)
-print 'random_tree'
-random_tree = RandomForestClassifier(n_estimators=2500)
-random_tree = random_tree.fit(X_learning,Y_learning)
-#coef = bayes_estimator.theta_
-#coef = feature_selec.inverse_transform(coef)
-#cv = cross_validation.ShuffleSplit(X.shape[0], n_iter=100,
-                                       #test_size=0.2, random_state=0)
-ranfortitle = 'Random Forest(2500) model CV(10) in fitting gong_block PCA feature vector not seleted'
-plot_learning_curve(random_tree, ranfortitle ,X_learning,Y_learning, cv=10)
-print 'bayes_estimator'
-bayestitle = 'Naive Bayes model CV(10) in fitting gong_block PCA feature vector not seleted'
-plot_learning_curve(bayes_estimator, bayestitle,X_learning,Y_learning, cv=10)
-"""
 """
 bayes_estimator = GaussianNB()
 bayes_estimator.fit(X_learning,Y_learning)

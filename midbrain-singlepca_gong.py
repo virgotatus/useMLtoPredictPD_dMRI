@@ -79,7 +79,7 @@ def plot_haxby(activation, title):
     p_f = Rectangle((0, 0), 1, 1, fc="limegreen")
     plt.legend([p_h, p_f], ["house", "face"])
     plt.title(title, x=.05, ha='left', y=.90, color='w', size=28)
-def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
+def plot_learning_curve(estimator, title, X, y, ylim=[0.2,1.1], cv=None,
                         n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
     """
     Generate a simple plot of the test and traning learning curve.
@@ -141,8 +141,6 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     #ax.patch.set_color('k')
     ax.patch.set_linewidth=2.5
     axis = plt.gca().xaxis
-    for label in axis.get_ticklabels():
-        label.set_color('w')
 
     for line in axis.get_ticklines():
         #line.set_color('w')
@@ -159,8 +157,8 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
 data_con_path = os.getcwd()+'//data//ana9-14//control//'
 data_pat_path = os.getcwd()+'//data//ana9-14//patient//'
 data_path = os.getcwd()+'/zhibiao/'
-label_con_path = os.getcwd()+'//data//gong_block//control//'
-label_pat_path = os.getcwd()+'//data//gong_block//patient//'
+label_con_path = os.getcwd()+'//data//midbrain_block//control//'
+label_pat_path = os.getcwd()+'//data//midbrain_block//patient//'
 #去掉一些size不是19*20的人，这边需要预处理
 controllist = ['HUANGYAXIN','LIUZHIBING','SUNAIQUAN','Tanjinxin',
                'WANGCHUNXIANG','WANGKUNYING','WANGWEI','xiaowen',
@@ -189,7 +187,7 @@ data_row = 50
 data_col = 100
 data_shape_pca = 5000
 data_shape = 128*128*44
-data_shape = 3000
+data_shape = 1000
 data_num = 16
 pat_num = 21
 all_num = data_num+pat_num
@@ -266,7 +264,7 @@ Y_learning[Y_learning==1].shape
 ##############################################################################
 #feature selection
 print 'feature selection'
-feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=500)  #中闹500
+feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=100)  #中闹500
 X_reduced = feature_selec.fit_transform(X_learning,Y_learning)
 where = feature_selec.get_support()
 #awhere = where.reshape(2,20,50,5)
@@ -285,16 +283,16 @@ where = feature_selec.get_support()
 bayes_estimator = GaussianNB()
 bayes_estimator.fit(X_reduced,Y_learning)
 print 'random_tree'
-random_tree = RandomForestClassifier(n_estimators=1500)
+random_tree = RandomForestClassifier(n_estimators=1000)
 random_tree = random_tree.fit(X_reduced,Y_learning)
 #coef = bayes_estimator.theta_
 #coef = feature_selec.inverse_transform(coef)
 #cv = cross_validation.ShuffleSplit(X.shape[0], n_iter=100,
                                        #test_size=0.2, random_state=0)
-ranfortitle = 'Random Forest(1500) model CV(10) in fitting gong_block PCA feature vector after feature selection(500)'
+ranfortitle = 'Random Forest(1000) model CV(10) in fitting midbrain_block PCA feature vector after feature selection(100)'
 plot_learning_curve(random_tree, ranfortitle ,X_reduced,Y_learning, cv=10)
 print 'bayes_estimator'
-bayestitle = 'Naive Bayes model CV(10) in fitting gong_block PCA feature vector after feature selection(500)'
+bayestitle = 'Naive Bayes model CV(10) in fitting midbrain_block PCA feature vector after feature selection(100)'
 plot_learning_curve(bayes_estimator, bayestitle,X_reduced,Y_learning, cv=10)
 
 
@@ -303,27 +301,19 @@ plot_learning_curve(bayes_estimator, bayestitle,X_reduced,Y_learning, cv=10)
 bayes_estimator = GaussianNB()
 bayes_estimator.fit(X_learning,Y_learning)
 print 'random_tree'
-random_tree = RandomForestClassifier(n_estimators=2500)
+random_tree = RandomForestClassifier(n_estimators=1500)
 random_tree = random_tree.fit(X_learning,Y_learning)
 #coef = bayes_estimator.theta_
 #coef = feature_selec.inverse_transform(coef)
 #cv = cross_validation.ShuffleSplit(X.shape[0], n_iter=100,
                                        #test_size=0.2, random_state=0)
-ranfortitle = 'Random Forest(2500) model CV(10) in fitting gong_block PCA feature vector not seleted'
+ranfortitle = 'Random Forest(1500) model CV(10) in fitting midbrain_block PCA feature vector not seleted'
 plot_learning_curve(random_tree, ranfortitle ,X_learning,Y_learning, cv=10)
 print 'bayes_estimator'
-bayestitle = 'Naive Bayes model CV(10) in fitting gong_block PCA feature vector not seleted'
+bayestitle = 'Naive Bayes model CV(10) in fitting midbrain_block PCA feature vector not seleted'
 plot_learning_curve(bayes_estimator, bayestitle,X_learning,Y_learning, cv=10)
 """
-"""
-bayes_estimator = GaussianNB()
-bayes_estimator.fit(X_learning,Y_learning)
 
-scores1=cross_validation.cross_val_score(bayes_estimator,X_learning,Y_learning, cv=10)
-#scores = cross_validation.cross_val_score(clf, X_scaled_norm, y_le, cv=10)
-print("Bayes: Accuracy: %0.2f (+/- %0.2f)" % (scores1.mean(), scores1.std() * 2))
-plot_learning_curve(bayes_estimator, 'Learning Curves (Naive Bayes)', X_learning,Y_learning, cv=cv)
-"""
 # Load faces data
 #dataset = fetch_olivetti_faces(shuffle=True, random_state=rng)
 """

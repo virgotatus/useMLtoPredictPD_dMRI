@@ -23,6 +23,7 @@ import matplotlib.pyplot as plt
 from sklearn.datasets import fetch_olivetti_faces
 from sklearn.cluster import MiniBatchKMeans
 from sklearn import decomposition
+import os
 
 import pandas as pd
 data_con_path = 'E:\\brain\\fa&gfa experi\\control_fa\\'
