@@ -159,11 +159,12 @@ def plot_learning_curve(estimator, title, X, y, ylim=[0.2,1.1], cv=None,
 data_con_path = os.getcwd()+'//data//ana9-14//control//'
 data_pat_path = os.getcwd()+'//data//ana9-14//patient//'
 data_path = os.getcwd()+'/zhibiao/'
+label_path = os.getcwd()+'/data/'
 label_con_path_gong = os.getcwd()+'//data//gong_block//control//'
 label_pat_path_gong = os.getcwd()+'//data//gong_block//patient//'
 label_con_path_mid = os.getcwd()+'//data//midbrain_block//control//'
 label_pat_path_mid = os.getcwd()+'//data//midbrain_block//patient//'
-#去掉一些size不是19*20的人，这边需要预处理
+#去掉一些size不是19*20的人，这边需要预处理 吴博控制组3T 
 controllist = ['HUANGYAXIN','LIUZHIBING','SUNAIQUAN','Tanjinxin',
                'WANGCHUNXIANG','WANGKUNYING','WANGWEI','xiaowen',
                'XIAQIAORONG','XIEGUOLIANG','YAOYOUYUAN','YUANGUISHENG',
@@ -200,13 +201,13 @@ image_shape = (data_row, data_col)
 rng = RandomState(0)
 #指标设置
 classname = ['1_FA','1_MD','1_csa_gfa','1_MSD','1_den']
-classname = ['_FA','_MD','_GFA','_MSD']
-classnum = 4
+classname = ['_FA','_MD','_GFA','_MSD','_rtop_signal','_rtop_pdf']
+classnum = 6
 
 X = np.zeros([classnum,all_num,data_shape])
 X_pca = np.zeros([classnum,all_num,data_shape_pca])
 
-labelname = '/home/gongyilong/brain-pca/data/big_gong_block/control/HUANGYAXIN.nii-label.nii.gz'
+labelname = os.getcwd()+'/data/big_gong_block/control/HUANGYAXIN.nii-label.nii.gz'
 label_all = np.zeros_like(nib.load(labelname).get_data())
 #得到控制组的X
 for c,cla in enumerate(classname):
@@ -215,15 +216,17 @@ for c,cla in enumerate(classname):
         print idx,name
         f_nii = nib.load(data_path+name+cla+'.nii.gz')
         d = f_nii.get_data()
-        f_pca = np.load(data_con_path+name+'1'+cla+'.npy')
+        f_pca = nib.load(label_path+'/big_gong_block/'+'/control/'+name+'.nii-label.nii.gz')
+        f_pca = f_pca.get_data() 
+        f_pca = d[f_pca==1]
         f_pca = f_pca.reshape(-1)
         #f = np.array(f)    
         d = d.reshape(-1)
         print d.shape
         #d_std = StandardScaler().fit_transform(d)
-        X[c,idx,:d.shape[0]] = d/d.max()
+        X[c,idx,:d.shape[0]] = (d)/(d.max())
         #f_pca_std = StandardScaler().fit_transform(f_pca)
-        X_pca[c,idx,:f_pca.shape[0]] = f_pca/f_pca.max() 
+        X_pca[c,idx,:f_pca.shape[0]] = (f_pca)/(f_pca.max()) 
         label_nii = nib.load(label_con_path_gong+name+'.nii-label.nii.gz')
         label_img = label_nii.get_data()
         label_all = label_all+label_img
@@ -237,15 +240,17 @@ for c,cla in enumerate(classname):
         #f = np.load(data_pat_path+name+cla+'.npy')
         f = nib.load(data_path+name+cla+'.nii.gz')
         d = f.get_data()
-        f_pca = np.load(data_pat_path+name+'1'+cla+'.npy')
+        f_pca = nib.load(label_path+'/big_gong_block/'+'/patient/'+name+'.nii-label.nii.gz')
+        f_pca = f_pca.get_data() 
+        f_pca = d[f_pca==1]
         f_pca = f_pca.reshape(-1)
         #f = np.array(f)
         d = d.reshape(-1)
         #d_std = StandardScaler().fit_transform(d)
         print d.shape
-        X[c,idx,:d.shape[0]] = d/d.max()
+        X[c,idx,:d.shape[0]] = d/(d.max())
         #f_pca_std = StandardScaler().fit_transform(f_pca)
-        X_pca[c,idx,:f_pca.shape[0]] = f_pca/f_pca.max()
+        X_pca[c,idx,:f_pca.shape[0]] = (f_pca)/(f_pca.max()) 
         
         label_nii = nib.load(label_pat_path_gong+name+'.nii-label.nii.gz')
         label_img = label_nii.get_data()
@@ -258,33 +263,36 @@ label_all = label_all/4
 ll=label_all[label_all>0]
 ### fit patient data ####
 #指标pca
+
 print 'pca starting'
 #存储pca模型
-zhibiao_pca = decomposition.IncrementalPCA(n_components=2)
+zhibiao_pca = decomposition.IncrementalPCA(n_components=3)
 zhibiao_pca.fit(X_pca.reshape(classnum,-1).T)
 #joblib.dump(zhibiao, os.getcwd()+'/modelsave/zhibiao_pca_5000.pkl')
 #zhibiao_pca = joblib.load(os.getcwd()+'/modelsave/zhibiao_pca_5000.pkl')
 X_outpca = zhibiao_pca.transform(X.reshape(classnum,-1).T)  #中脑或者全脑
 
-#另外分量
-three_pca = decomposition.IncrementalPCA(n_components=3)
-three_pca.fit(X_pca.reshape(classnum,-1).T)
-three_out = three_pca.transform(X.reshape(classnum,-1).T)
-p3 = three_out[:,2].reshape([all_num,128,128,44])
-p3 = p3.mean(axis=0)
-#plt.imshow(p3[:,:,28].T)
-#plt.xticks(())
-#plt.yticks(())
+"""另外分量"""
+"""
+signal = X_outpca[:,2].reshape([all_num,128,128,44])
+signal = signal.mean(axis=0)
+ind = plt.imshow(signal[:,:,28].T)
+plt.xticks(())
+plt.yticks(())
+plt.title('')
+plt.colorbar(ind)
+"""
 ###############################################################################
 #得出X，Y的数据
 
-X_learning = np.zeros([all_num,data_shape*2])           #(n_samples, n_features) 
+X_learning = np.zeros([all_num,data_shape*3])           #(n_samples, n_features) 
 for i in range(all_num):
     X_learning[i,:data_shape]=X_outpca[i*data_shape:(i+1)*data_shape,0]
-    X_learning[i,data_shape:]=X_outpca[i*data_shape:(i+1)*data_shape,1]
+    X_learning[i,data_shape:data_shape*2]=X_outpca[i*data_shape:(i+1)*data_shape,1]
+    X_learning[i,data_shape*2:]=X_outpca[i*data_shape:(i+1)*data_shape,2]
 
-Y_learning = np.ones(all_num,int)
-Y_learning[data_num:] =  2*np.ones(pat_num,int)
+Y_learning = np.zeros(all_num,int)
+Y_learning[data_num:] =  np.ones(pat_num,int)
 Y_learning[Y_learning==1].shape
 
 #画实验一
@@ -334,10 +342,10 @@ plt.savefig('haxby/haxby_fscore.eps')
 """
 
 print 'feature selection'
-feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=10000)
+feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=30000)
 X_reduced = feature_selec.fit_transform(X_learning,Y_learning)
 where = feature_selec.get_support()
-awhere = where.reshape(2,128,128,44)
+awhere = where.reshape(3,128,128,44)
 awhere.astype('float')
 #dipy_home = pjoin(os.path.expanduser('~'), 'dipy_data')
 #folder = pjoin(dipy_home, 'control')
@@ -350,18 +358,23 @@ awhere.astype('float')
 #joblib.dump(bayes_estimator, os.getcwd()+'/modelsave/whole_bayes_estimator.pkl')
 #bayes_estimator = joblib.load(os.getcwd()+'/modelsave/whole_bayes_estimator.pkl')
 print 'random_forest'
-random_forest = RandomForestClassifier(n_estimators=1000)
+random_forest = RandomForestClassifier(n_estimators=8000)
+ranfortitle = 'Random Forest(1000) model CV(10) fitting whole_brain PCA feature vector after feature selection(30000)'
+plot_learning_curve(random_forest,ranfortitle,X_reduced,Y_learning, cv=10)
+
 random_forest = random_forest.fit(X_reduced,Y_learning)
-#joblib.dump(random_tree, os.getcwd()+'/modelsave/whole_random_tree.pkl')
-#random_tree = joblib.load(os.getcwd()+'/modelsave/whole_random_tree.pkl')
-plot_learning_curve(random_forest, 'random_forest',X_reduced,Y_learning, cv=10)
-#plt.savefig('figure_pdf/whole_ranfor_reduced.pdf')
-#plt.savefig('figure_pdf/whole_ranfor_reduced.eps')
+pred_y = random_forest.predict(X_reduced)
+prob_log = random_forest.predict_log_proba(X_reduced)
+prob = random_forest.predict_proba(X_reduced)
+#np.savetxt(os.getcwd()+'/mat_save/pred_y.txt',pred_y)
+#np.savetxt(os.getcwd()+'/mat_save/prob_log.txt',prob_log)
+#np.savetxt(os.getcwd()+'/mat_save/prob.txt',prob)
 
 print 'bayes_estimator'
 bayes_estimator = GaussianNB()
 bayes_estimator.fit(X_reduced,Y_learning)
-plot_learning_curve(bayes_estimator, 'Bayes',X_reduced,Y_learning, cv=10)
+bayestitle = 'Naive Bayes model CV(10) fitting whole_brain PCA feature vector after feature selection(30000)'
+plot_learning_curve(bayes_estimator, bayestitle,X_reduced,Y_learning, cv=10)
 #plt.savefig('figure_pdf/whole_bayes_reduced.pdf')
 #plt.savefig('figure_pdf/whole_bayes_reduced.eps')
 """
@@ -370,44 +383,53 @@ coef = bayes_estimator.theta_
 coef = feature_selec.inverse_transform(coef)
 # reverse masking
 """
-coef1 = np.zeros((awhere.shape[0],awhere.shape[1], awhere.shape[2], awhere.shape[3]),
+coef1 = np.ones((awhere.shape[0],awhere.shape[1], awhere.shape[2], awhere.shape[3]),
             dtype=X.dtype, order="C")
-coef1[awhere] = bayes_estimator.theta_[0]
-
+#coef1[awhere] = (bayes_estimator.theta_[1]-bayes_estimator.theta_[0])/(bayes_estimator.sigma_[1]+bayes_estimator.sigma_[0])
+imp = random_forest.feature_importances_
+coef1[awhere] = random_forest.feature_importances_
 # We use a masked array so that the voxels at '-1' are displayed
 # transparently
-act = np.ma.masked_array(coef1, coef1 == 0)
+act = np.ma.masked_array(coef1, coef1 == 1)
 
-beijing = X_learning.reshape(36,2,128,128,44)
+beijing = X_learning.reshape(36,3,128,128,44)
 
+"""label 个数直方图"""
+"""
 plt.hist(ll,28)
 plt.title("hist of all label value's summary")
 plt.grid()
-
+"""
 mask_data = label_all>10
-#工形区域!!23!!
+
+"""实验六工形区域!!23!!"""
+
 for z in range(44):
     beijing_one = beijing[:,1,:,:,z].mean(axis=0)
     plt.figure()
-    ind = plt.imshow(beijing_one.T,cmap=plt.cm.gray,
+    plt.imshow(beijing_one.T,cmap=plt.cm.gray,
                      interpolation='nearest', origin='lower')  #图片叠加，是要看她的值区间的，根据值区间分配颜色！
     
-    plt.imshow(act[0,:,:,z].T,cmap=plt.cm.hot,
+    ind = plt.imshow(act[1,:,:,z].T,cmap=plt.cm.hot,
                   interpolation='nearest', origin='lower') 
                   
     plt.contour(mask_data[:, :, z].astype(np.bool).T, contours=1,
                 antialiased=False, linewidths=4., levels=[0],
                 interpolation='nearest', colors=['blue'], origin='image')
-    
+    plt.title('z='+str(z))
     plt.xticks(())
     plt.yticks(())
-    if z == 22:
+    if z == 24:
         bar = plt.colorbar(ind)
         
     #plt.savefig('figure_pdf/all_z/zhibiao1_label+feature_'+str(z)+'.pdf')
-    #plt.savefig('figure_pdf/all_z/zhibiao1_label+feature_'+str(z)+'.png')
-    
+    #plt.savefig('figure_pdf/all_z/zhibiao1_label+feature_mportance(30000,8000)_'+str(z)+'.png')
 
+"""预测最后准确率"""   
+pred = bayes_estimator.predict(X_reduced)
+print ('Bayes Training Accuracy: %f\n', np.mean((pred == Y_learning)) * 100);
+pred = random_forest.predict(X_reduced)
+print ('random_forest Training Accuracy: %f\n', np.mean((pred == Y_learning)) * 100);
 #中脑
 18
 """

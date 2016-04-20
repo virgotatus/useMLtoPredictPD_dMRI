@@ -79,7 +79,7 @@ def plot_haxby(activation, title):
     p_f = Rectangle((0, 0), 1, 1, fc="limegreen")
     plt.legend([p_h, p_f], ["house", "face"])
     plt.title(title, x=.05, ha='left', y=.90, color='w', size=28)
-def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
+def plot_learning_curve(estimator, title, X, y, ylim=[0.2,1.1], cv=None,
                         n_jobs=1, train_sizes=np.linspace(.1, 1.0, 5)):
     """
     Generate a simple plot of the test and traning learning curve.
@@ -141,8 +141,7 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
     #ax.patch.set_color('k')
     ax.patch.set_linewidth=2.5
     axis = plt.gca().xaxis
-    for label in axis.get_ticklabels():
-        label.set_color('w')
+
 
     for line in axis.get_ticklines():
         #line.set_color('w')
@@ -159,8 +158,9 @@ def plot_learning_curve(estimator, title, X, y, ylim=None, cv=None,
 data_con_path = os.getcwd()+'//data//ana9-14//control//'
 data_pat_path = os.getcwd()+'//data//ana9-14//patient//'
 data_path = os.getcwd()+'/zhibiao/'
-label_con_path = os.getcwd()+'//data//gong_block//control//'
-label_pat_path = os.getcwd()+'//data//gong_block//patient//'
+label_path = os.getcwd()+'/data/'
+label_con_path = os.getcwd()+'//data//midbrain_block//control//'
+label_pat_path = os.getcwd()+'//data//midbrain_block//patient//'
 #去掉一些size不是19*20的人，这边需要预处理
 controllist = ['HUANGYAXIN','LIUZHIBING','SUNAIQUAN','Tanjinxin',
                'WANGCHUNXIANG','WANGKUNYING','WANGWEI','xiaowen',
@@ -189,7 +189,7 @@ data_row = 50
 data_col = 100
 data_shape_pca = 5000
 data_shape = 128*128*44
-data_shape = 3000
+data_shape = 1000
 data_num = 16
 pat_num = 21
 all_num = data_num+pat_num
@@ -198,8 +198,8 @@ image_shape = (data_row, data_col)
 rng = RandomState(0)
 #指标设置
 classname = ['1_FA','1_MD','1_csa_gfa','1_MSD','1_den']
-classname = ['_FA','_MD','_GFA','_MSD']
-classnum = 4
+classname = ['_FA','_MD','_GFA','_MSD','_rtop_signal','_rtop_pdf']
+classnum = 6
 
 X = np.zeros([classnum,all_num,data_shape])
 X_pca = np.zeros([classnum,all_num,data_shape_pca])
@@ -213,16 +213,17 @@ for c,cla in enumerate(classname):
         f_all = f_nii.get_data()
         label_nii = nib.load(label_con_path+name+'.nii-label.nii.gz')
         label_img = label_nii.get_data()
-        f_pca = np.load(data_con_path+name+'1'+cla+'.npy')
+        f_pca = nib.load(label_path+'/big_gong_block/'+'/control/'+name+'.nii-label.nii.gz')
+        f_pca = f_pca.get_data() 
+        f_pca = f_all[f_pca==1]
         f_pca = f_pca.reshape(-1)
         
         f_part = f_all[label_img==1]
         print f_part.shape
         #f = np.array(f)    
         #d_std = StandardScaler().fit_transform(d)
-        X[c,idx,:f_part.shape[0]] = f_part/f_part.max()
-        #f_pca_std = StandardScaler().fit_transform(f_pca)
-        X_pca[c,idx,:f_pca.shape[0]] = f_pca/f_pca.max()    
+        X[c,idx,:f_part.shape[0]] = (f_part-f_part.min())/(f_part.max()-f_part.min())
+        X_pca[c,idx,:f_pca.shape[0]] = (f_pca-f_pca.min())/(f_pca.max()-f_pca.min())   
         
     for name in patientlist:
         idx+=1
@@ -232,15 +233,17 @@ for c,cla in enumerate(classname):
         f_all = f_nii.get_data()
         label_nii = nib.load(label_pat_path+name+'.nii-label.nii.gz')
         label_img = label_nii.get_data()
-        f_pca = np.load(data_pat_path+name+'1'+cla+'.npy')
+        f_pca = nib.load(label_path+'/big_gong_block/'+'/patient/'+name+'.nii-label.nii.gz')
+        f_pca = f_pca.get_data() 
+        f_pca = f_all[f_pca==1]
         f_pca = f_pca.reshape(-1)
         f_part = f_all[label_img==1]
         #f = np.array(f)
         #d_std = StandardScaler().fit_transform(d)
         print f_part.shape
-        X[c,idx,:f_part.shape[0]] = f_part/f_part.max()
+        X[c,idx,:f_part.shape[0]] = (f_part-f_part.min())/(f_part.max()-f_part.min())
         #f_pca_std = StandardScaler().fit_transform(f_pca)
-        X_pca[c,idx,:f_pca.shape[0]] = f_pca/f_pca.max()
+        X_pca[c,idx,:f_pca.shape[0]] = (f_pca-f_pca.min())/(f_pca.max()-f_pca.min()) 
 
 ### fit patient data ####
 #指标pca
@@ -251,6 +254,7 @@ zhibiao_pca.fit(X_pca.reshape(classnum,-1).T)
 #joblib.dump(zhibiao, os.getcwd()+'/modelsave/zhibiao_pca_5000.pkl')
 #zhibiao_pca = joblib.load(os.getcwd()+'/modelsave/zhibiao_pca_5000.pkl')
 X_outpca = zhibiao_pca.transform(X.reshape(classnum,-1).T)  #中脑或者全脑
+
 ###############################################################################
 #得出X，Y的数据
 
@@ -259,8 +263,8 @@ for i in range(all_num):
     X_learning[i,:data_shape]=X_outpca[i*data_shape:(i+1)*data_shape,0]
     X_learning[i,data_shape:]=X_outpca[i*data_shape:(i+1)*data_shape,1]
 
-Y_learning = np.ones(all_num,int)
-Y_learning[data_num:] =  2*np.ones(pat_num,int)
+Y_learning = np.zeros(all_num,int)
+Y_learning[data_num:] =  np.ones(pat_num,int)
 Y_learning[Y_learning==1].shape
 
 X_learning = np.zeros([all_num,data_shape*3])           #(n_samples, n_features) 
@@ -268,23 +272,22 @@ for i in range(all_num):
     X_learning[i,:data_shape]=X_outpca[i*data_shape:(i+1)*data_shape,0]
     X_learning[i,data_shape:data_shape*2]=X_outpca[i*data_shape:(i+1)*data_shape,1]
     X_learning[i,data_shape*2:]=X_outpca[i*data_shape:(i+1)*data_shape,2]
-    
+"""
 plt.figure()
 plt.plot(X_learning[:16,:].mean(axis=0),'b-',X_learning[16:,:].mean(axis=0),'r:')
 plt.xlim(xmax=9000)
-plt.text(x=1500,y=0.7,s = "pca1",fontsize=17,color='y')
-plt.text(x=4000,y=0.7,s = "pca2",fontsize=17,color='y')
-plt.text(x=7000,y=0.7,s = "pca3",fontsize=17,color='y')
+plt.text(x=0,y=0.7,s = "pca1",fontsize=17,color='y')
+plt.text(x=3000,y=0.7,s = "pca2",fontsize=17,color='y')
+plt.text(x=6000,y=0.7,s = "pca3",fontsize=17,color='y')
 plt.grid()
 plt.legend({'control','patient'},'best')
 plt.title('mean signal of three components after PCA of con and pat in gong_block')
-
-asda
+"""
 
 ##############################################################################
 #feature selection
 print 'feature selection'
-feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=50)  #中闹500
+feature_selec = feature_selection.SelectKBest(feature_selection.f_classif,k=1000)  #中闹500
 X_reduced = feature_selec.fit_transform(X_learning,Y_learning)
 where = feature_selec.get_support()
 #awhere = where.reshape(2,20,50,5)
@@ -299,20 +302,17 @@ where = feature_selec.get_support()
 #存储数据
 #np.save('/home/gongyilong/brain-pca/mat_save/mid_brain_Xlearning',X_learning)
 #np.save('/home/gongyilong/brain-pca/mat_save/mid_brain_Xreduced',X_reduced)
-bayes_estimator = GaussianNB()
-bayes_estimator.fit(X_reduced,Y_learning)
 print 'random_tree'
-random_tree = RandomForestClassifier(n_estimators=500)
-random_tree = random_tree.fit(X_reduced,Y_learning)
-#coef = bayes_estimator.theta_
-#coef = feature_selec.inverse_transform(coef)
-#cv = cross_validation.ShuffleSplit(X.shape[0], n_iter=100,
-                                       #test_size=0.2, random_state=0)
-plot_learning_curve(random_tree, 'random_tree',X_reduced,Y_learning, cv=10)
+random_forest = RandomForestClassifier(n_estimators=1000)
+random_forest = random_forest.fit(X_learning,Y_learning)
+ranfortitle = 'Random Forest(1000) model CV(10) in fitting midbrain_block_brain PCA feature vector feature selection'
+plot_learning_curve(random_forest,ranfortitle,X_learning,Y_learning, cv=10)
+
 print 'bayes_estimator'
-plot_learning_curve(bayes_estimator, 'Bayes',X_reduced,Y_learning, cv=10)
-
-
+bayes_estimator = GaussianNB()
+bayes_estimator.fit(X_learning,Y_learning)
+bayestitle = 'Naive Bayes model CV(10) in fitting midbrain_block_brain PCA feature vector no feature selection'
+plot_learning_curve(bayes_estimator, bayestitle,X_learning,Y_learning, cv=10)
 """
 bayes_estimator = GaussianNB()
 bayes_estimator.fit(X_learning,Y_learning)
@@ -322,6 +322,11 @@ scores1=cross_validation.cross_val_score(bayes_estimator,X_learning,Y_learning, 
 print("Bayes: Accuracy: %0.2f (+/- %0.2f)" % (scores1.mean(), scores1.std() * 2))
 plot_learning_curve(bayes_estimator, 'Learning Curves (Naive Bayes)', X_learning,Y_learning, cv=cv)
 """
+"""预测最后准确率"""   
+pred = bayes_estimator.predict(X_learning)
+print ('Bayes Training Accuracy: %f\n', np.mean((pred == Y_learning)) * 100);
+pred = random_forest.predict(X_learning)
+print ('random_forset Training Accuracy: %f\n', np.mean((pred == Y_learning)) * 100);
 # Load faces data
 #dataset = fetch_olivetti_faces(shuffle=True, random_state=rng)
 """

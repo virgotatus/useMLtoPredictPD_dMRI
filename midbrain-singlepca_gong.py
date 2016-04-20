@@ -313,7 +313,11 @@ print 'bayes_estimator'
 bayestitle = 'Naive Bayes model CV(10) in fitting midbrain_block PCA feature vector not seleted'
 plot_learning_curve(bayes_estimator, bayestitle,X_learning,Y_learning, cv=10)
 """
-
+"""预测最后准确率"""   
+pred = bayes_estimator.predict(X_reduced)
+print ('Bayes Training Accuracy: %f\n', np.mean((pred == Y_learning)) * 100);
+pred = random_forest.predict(X_reduced)
+print ('Bayes Training Accuracy: %f\n', np.mean((pred == Y_learning)) * 100);
 # Load faces data
 #dataset = fetch_olivetti_faces(shuffle=True, random_state=rng)
 """
